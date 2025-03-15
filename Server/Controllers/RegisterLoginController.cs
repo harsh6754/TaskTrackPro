@@ -93,5 +93,26 @@ namespace Server.Controllers
                 return StatusCode(500, new { message = "An error occurred while registering user.", error = ex.Message });
             }
         }
+
+        [HttpPost("Login")]
+        public async Task<IActionResult> Login([FromForm] Repositories.Models.t_Login login)
+        {
+            try
+            {
+                var user = await _registerLoginInterface.Login(login);
+                if (user != null)
+                {
+                    return Ok(user);
+                }
+                else
+                {
+                    return NotFound(new { message = "Invalid username or password." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while logging in.", error = ex.Message });
+            }
+        }
     }
 }

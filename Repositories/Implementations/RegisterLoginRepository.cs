@@ -19,8 +19,10 @@ namespace Repositories.Implementations
         public async Task<List<t_Country>> GetCountries()
         {
             List<t_Country> countries = new List<t_Country>();
-            await _conn.CloseAsync();
-            await _conn.OpenAsync();
+            if (_conn.State != System.Data.ConnectionState.Open)
+            {
+                await _conn.OpenAsync();
+            }
             using (var cmd = new NpgsqlCommand("SELECT * FROM t_country", _conn))
             using (var reader = await cmd.ExecuteReaderAsync())
                 while (await reader.ReadAsync())
@@ -104,29 +106,29 @@ namespace Repositories.Implementations
             return cities;
         }
 
-   public async Task<int> Register(t_Register register)
-{
-    try
-    {
-        await _conn.CloseAsync();
-        await _conn.OpenAsync();
-
-        // Check if email already exists
-        string checkQuery = "SELECT COUNT(*) FROM t_task_track_pro_register_login WHERE c_email = @c_email";
-        using (NpgsqlCommand comCheck = new NpgsqlCommand(checkQuery, _conn))
+        public async Task<int> Register(t_Register register)
         {
-            comCheck.Parameters.AddWithValue("@c_email", register.c_email);
-            int existingCount = Convert.ToInt32(await comCheck.ExecuteScalarAsync());
-
-            if (existingCount > 0)
+            try
             {
                 await _conn.CloseAsync();
-                return 0; // Email already exists
-            }
-        }
+                await _conn.OpenAsync();
 
-        // Insert new user
-        string insertQuery = @"
+                // Check if email already exists
+                string checkQuery = "SELECT COUNT(*) FROM t_task_track_pro_register_login WHERE c_email = @c_email";
+                using (NpgsqlCommand comCheck = new NpgsqlCommand(checkQuery, _conn))
+                {
+                    comCheck.Parameters.AddWithValue("@c_email", register.c_email);
+                    int existingCount = Convert.ToInt32(await comCheck.ExecuteScalarAsync());
+
+                    if (existingCount > 0)
+                    {
+                        await _conn.CloseAsync();
+                        return 0; // Email already exists
+                    }
+                }
+
+                // Insert new user
+                string insertQuery = @"
             INSERT INTO t_task_track_pro_register_login (
                 c_firstName, c_middleName, c_lastName, c_email, c_password, 
                 c_address, c_mobile, c_gender, c_dob, 
@@ -137,39 +139,84 @@ namespace Repositories.Implementations
                 @c_countryId, @c_stateId, @c_districtId, @c_cityId, @c_image
             ) RETURNING c_userId"; // Return the newly inserted user ID
 
-        using (NpgsqlCommand comInsert = new NpgsqlCommand(insertQuery, _conn))
-        {
-            comInsert.Parameters.AddWithValue("@c_firstName", register.c_firstName);
-            comInsert.Parameters.AddWithValue("@c_middleName", (object?)register.c_middleName ?? DBNull.Value);
-            comInsert.Parameters.AddWithValue("@c_lastName", register.c_lastName);
-            comInsert.Parameters.AddWithValue("@c_email", register.c_email);
-            comInsert.Parameters.AddWithValue("@c_password", register.c_password); // Hash this before storing
-            comInsert.Parameters.AddWithValue("@c_address", register.c_address);
-            comInsert.Parameters.AddWithValue("@c_mobile", register.c_mobile);
-            comInsert.Parameters.AddWithValue("@c_gender", register.c_gender);
-            comInsert.Parameters.AddWithValue("@c_dob", register.c_dob);
-            comInsert.Parameters.AddWithValue("@c_countryId", register.c_countryId);
-            comInsert.Parameters.AddWithValue("@c_stateId", register.c_stateId);
-            comInsert.Parameters.AddWithValue("@c_districtId", register.c_districtId);
-            comInsert.Parameters.AddWithValue("@c_cityId", register.c_cityId);
-            comInsert.Parameters.AddWithValue("@c_image", (object?)register.c_image ?? DBNull.Value);
+                using (NpgsqlCommand comInsert = new NpgsqlCommand(insertQuery, _conn))
+                {
+                    comInsert.Parameters.AddWithValue("@c_firstName", register.c_firstName);
+                    comInsert.Parameters.AddWithValue("@c_middleName", (object?)register.c_middleName ?? DBNull.Value);
+                    comInsert.Parameters.AddWithValue("@c_lastName", register.c_lastName);
+                    comInsert.Parameters.AddWithValue("@c_email", register.c_email);
+                    comInsert.Parameters.AddWithValue("@c_password", register.c_password); // Hash this before storing
+                    comInsert.Parameters.AddWithValue("@c_address", register.c_address);
+                    comInsert.Parameters.AddWithValue("@c_mobile", register.c_mobile);
+                    comInsert.Parameters.AddWithValue("@c_gender", register.c_gender);
+                    comInsert.Parameters.AddWithValue("@c_dob", register.c_dob);
+                    comInsert.Parameters.AddWithValue("@c_countryId", register.c_countryId);
+                    comInsert.Parameters.AddWithValue("@c_stateId", register.c_stateId);
+                    comInsert.Parameters.AddWithValue("@c_districtId", register.c_districtId);
+                    comInsert.Parameters.AddWithValue("@c_cityId", register.c_cityId);
+                    comInsert.Parameters.AddWithValue("@c_image", (object?)register.c_image ?? DBNull.Value);
 
-            int userId = Convert.ToInt32(await comInsert.ExecuteScalarAsync());
-            await _conn.CloseAsync();
-            return userId;
+                    int userId = Convert.ToInt32(await comInsert.ExecuteScalarAsync());
+                    await _conn.CloseAsync();
+                    return userId;
+                }
+            }
+            catch (Exception ex)
+            {
+                await _conn.CloseAsync();
+                throw new Exception("An error occurred while registering the user: " + ex.Message);
+            }
         }
-    }
-    catch (Exception ex)
-    {
-        await _conn.CloseAsync();
-        throw new Exception("An error occurred while registering the user: " + ex.Message);
-    }
-}
 
 
-        public async Task<t_Register> Login(t_Login login)
+        public async Task<t_Register?> Login(t_Login login)
         {
-            return new t_Register();
+            try
+            {
+                await _conn.CloseAsync();
+                await _conn.OpenAsync();
+
+                string query = "SELECT * FROM t_task_track_pro_register_login WHERE c_email = @c_email AND c_password = @c_password";
+                using (NpgsqlCommand cmd = new NpgsqlCommand(query, _conn))
+                {
+                    cmd.Parameters.AddWithValue("@c_email", login.c_email);
+                    cmd.Parameters.AddWithValue("@c_password", login.c_password);
+                    using (var reader = await cmd.ExecuteReaderAsync())
+                    {
+                        if (await reader.ReadAsync())
+                        {
+                            return new t_Register()
+                            {
+                                c_userId = reader.GetInt32(reader.GetOrdinal("c_userId")),
+                                c_firstName = reader.GetString(reader.GetOrdinal("c_firstName")),
+                                c_middleName = reader.IsDBNull(reader.GetOrdinal("c_middleName")) ? null : reader.GetString(reader.GetOrdinal("c_middleName")),
+                                c_lastName = reader.GetString(reader.GetOrdinal("c_lastName")),
+                                c_email = reader.GetString(reader.GetOrdinal("c_email")),
+                                c_address = reader.GetString(reader.GetOrdinal("c_address")),
+                                c_mobile = reader.GetString(reader.GetOrdinal("c_mobile")),
+                                c_gender = reader.GetString(reader.GetOrdinal("c_gender")),
+                                c_dob = reader.GetDateTime(reader.GetOrdinal("c_dob")),
+                                c_countryId = reader.GetInt32(reader.GetOrdinal("c_countryId")),
+                                c_stateId = reader.GetInt32(reader.GetOrdinal("c_stateId")),
+                                c_cityId = reader.IsDBNull(reader.GetOrdinal("c_cityId")) ? 0 : reader.GetInt32(reader.GetOrdinal("c_cityId")),
+                                c_districtId = reader.GetInt32(reader.GetOrdinal("c_districtId")),
+                                // c_cityId = reader.GetInt32(reader.GetOrdinal("c_cityId")),
+                                // c_image = reader.IsDBNull(reader.GetOrdinal("c_image")) ? null : reader.GetFieldValue<byte[]>(reader.GetOrdinal("c_image"))
+                            };
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("An error occurred while logging in: " + ex.Message);
+            }
+            finally
+            {
+                await _conn.CloseAsync();
+            }
+            return null;
         }
+
     }
 }
