@@ -169,25 +169,25 @@ namespace Repositories.Implementations
         }
 
 
-        public async Task<t_Register?> Login(t_Login login)
+                public async Task<t_Register?> Login(t_Login login)
         {
+            t_Register? UserData = null;
+            string qry = @"
+                SELECT r.*, 
+                       s.c_stateName, 
+                       d.c_districtName, 
+                       c.c_cityName
+                FROM t_task_track_pro_register_login r
+                LEFT JOIN t_state s ON r.c_stateId = s.c_stateId
+                LEFT JOIN t_district d ON r.c_districtId = d.c_districtId
+                LEFT JOIN t_city c ON r.c_cityId = c.c_cityId
+                WHERE r.c_email = @c_email AND r.c_password = @c_password;
+            ";
+
             try
             {
-                await _conn.CloseAsync();
                 await _conn.OpenAsync();
-
-                string query = @"
-            SELECT r.*, 
-                   s.c_stateName, 
-                   d.c_districtName, 
-                   c.c_cityName
-            FROM t_task_track_pro_register_login r
-            LEFT JOIN t_state s ON r.c_stateId = s.c_stateId
-            LEFT JOIN t_district d ON r.c_districtId = d.c_districtId
-            LEFT JOIN t_city c ON r.c_cityId = c.c_cityId
-            WHERE r.c_email = @c_email AND r.c_password = @c_password";
-
-                using (NpgsqlCommand cmd = new NpgsqlCommand(query, _conn))
+                using (NpgsqlCommand cmd = new NpgsqlCommand(qry, _conn))
                 {
                     cmd.Parameters.AddWithValue("@c_email", login.c_email);
                     cmd.Parameters.AddWithValue("@c_password", login.c_password);
@@ -196,7 +196,7 @@ namespace Repositories.Implementations
                     {
                         if (await reader.ReadAsync())
                         {
-                            return new t_Register()
+                            UserData = new t_Register
                             {
                                 c_userId = reader.GetInt32(reader.GetOrdinal("c_userId")),
                                 c_firstName = reader.GetString(reader.GetOrdinal("c_firstName")),
@@ -211,10 +211,10 @@ namespace Repositories.Implementations
                                 c_stateId = reader.GetInt32(reader.GetOrdinal("c_stateId")),
                                 //c_stateName = reader.IsDBNull(reader.GetOrdinal("c_stateName")) ? null : reader.GetString(reader.GetOrdinal("c_stateName")),
                                 c_districtId = reader.GetInt32(reader.GetOrdinal("c_districtId")),
-                               // c_districtName = reader.IsDBNull(reader.GetOrdinal("c_districtName")) ? null : reader.GetString(reader.GetOrdinal("c_districtName")),
+                                //c_districtName = reader.IsDBNull(reader.GetOrdinal("c_districtName")) ? null : reader.GetString(reader.GetOrdinal("c_districtName")),
                                 c_cityId = reader.IsDBNull(reader.GetOrdinal("c_cityId")) ? 0 : reader.GetInt32(reader.GetOrdinal("c_cityId")),
                                 //c_cityName = reader.IsDBNull(reader.GetOrdinal("c_cityName")) ? null : reader.GetString(reader.GetOrdinal("c_cityName")),
-                                // c_image = reader.IsDBNull(reader.GetOrdinal("c_image")) ? null : reader.GetFieldValue<byte[]>(reader.GetOrdinal("c_image"))
+                                c_image = reader.IsDBNull(reader.GetOrdinal("c_image")) ? null : reader.GetString(reader.GetOrdinal("c_image"));
                             };
                         }
                     }
@@ -229,9 +229,7 @@ namespace Repositories.Implementations
                 await _conn.CloseAsync();
             }
 
-            return null;
+            return UserData;
         }
-
-
     }
 }

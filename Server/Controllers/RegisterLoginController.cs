@@ -76,6 +76,18 @@ namespace Server.Controllers
         [HttpPost("Register")]
         public async Task<IActionResult> Register([FromForm] Repositories.Models.t_Register register)
         {
+            if(register.ImageFile != null && register.ImageFile.Length > 0){
+                var fileName = register.c_email+Path.GetExtension(
+                    register.ImageFile.FileName
+                );
+                var filePath = Path.Combine("../Client/wwwroot/Images", fileName);
+                register.c_image = fileName;
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await register.ImageFile.CopyToAsync(fileStream);
+                }   
+            }
+            Console.WriteLine(register.c_image);
             try
             {
                 var result = await _registerLoginInterface.Register(register);
