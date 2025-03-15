@@ -1,6 +1,16 @@
 using Npgsql;
 using Repositories.Implementations;
 using Repositories.Interfaces;
+using System.Security.Principal;
+using System.Text;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using Microsoft.Net.Http.Headers;
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +31,52 @@ p.AddPolicy("corsapp", builder =>
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c => {
+    c.AddSecurityDefinition(
+        "token",
+        new OpenApiSecurityScheme{
+            Type = SecuritySchemeType.Http,
+            BearerFormat = "JWT",
+            Scheme = "Bearer",
+            In = ParameterLocation.Header,
+            Name = HeaderNames.Authorization
+        }
+    );
+    c.AddSecurityRequirement(
+        new OpenApiSecurityRequirement{
+            { new OpenApiSecurityScheme{
+                    Reference = new OpenApiReference{
+                        Type = ReferenceType.SecurityScheme,
+                        Id="token"
+                    },
+                },Array.Empty<string>()
+            }
+        }
+    );
+});
+
+builder.Services.AddAuthentication(option =>
+{
+    option.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    option.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    option.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false; // Ensure this is spelled correctly
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = false, // Set to true if you want to validate the issuer
+        ValidateAudience = false, // Set to true if you want to validate the audience
+        ValidateLifetime = false, // Token expiration validation
+        ValidateIssuerSigningKey = false, // Ensure signing key is validated
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+            builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is missing."))) // Ensure key is not null
+    };
+});
 
 var app = builder.Build();
 
@@ -33,6 +88,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 
 var summaries = new[]
 {

@@ -214,7 +214,7 @@ namespace Repositories.Implementations
                                 //c_districtName = reader.IsDBNull(reader.GetOrdinal("c_districtName")) ? null : reader.GetString(reader.GetOrdinal("c_districtName")),
                                 c_cityId = reader.IsDBNull(reader.GetOrdinal("c_cityId")) ? 0 : reader.GetInt32(reader.GetOrdinal("c_cityId")),
                                 //c_cityName = reader.IsDBNull(reader.GetOrdinal("c_cityName")) ? null : reader.GetString(reader.GetOrdinal("c_cityName")),
-                                c_image = reader.IsDBNull(reader.GetOrdinal("c_image")) ? null : reader.GetString(reader.GetOrdinal("c_image"));
+                                c_image = reader.IsDBNull(reader.GetOrdinal("c_image")) ? null : reader.GetString(reader.GetOrdinal("c_image"))
                             };
                         }
                     }

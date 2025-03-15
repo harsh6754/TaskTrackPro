@@ -1,9 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using Repositories.Interfaces;
+using Repositories.Models;
 
 namespace Server.Controllers
 {
@@ -12,10 +18,37 @@ namespace Server.Controllers
     public class RegisterLoginController : ControllerBase
     {
         private readonly IRegisterLoginInterface _registerLoginInterface;
-        public RegisterLoginController(IRegisterLoginInterface registerLoginInterface)
+        private readonly IConfiguration _config;
+        public RegisterLoginController(IRegisterLoginInterface registerLoginInterface, IConfiguration config)
         {
             _registerLoginInterface = registerLoginInterface ?? throw new ArgumentNullException(nameof(registerLoginInterface));
+            _config = config ?? throw new ArgumentNullException(nameof(config));
         }
+
+        private string GenerateJwtToken(t_Register register)
+        {
+            var claims = new List<Claim>
+    {
+        new Claim(JwtRegisteredClaimNames.Sub, _config["Jwt:Subject"] ?? "default_subject"),
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+        new Claim(JwtRegisteredClaimNames.Email, register.c_email),
+        new Claim("UserId", register.c_userId.ToString()) // Add UserId for identification
+    };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key missing.")));
+            var signIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddDays(30),
+                signingCredentials: signIn
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
 
         [HttpGet("GetCountries")]
         public async Task<IActionResult> GetCountries()
@@ -76,8 +109,9 @@ namespace Server.Controllers
         [HttpPost("Register")]
         public async Task<IActionResult> Register([FromForm] Repositories.Models.t_Register register)
         {
-            if(register.ImageFile != null && register.ImageFile.Length > 0){
-                var fileName = register.c_email+Path.GetExtension(
+            if (register.ImageFile != null && register.ImageFile.Length > 0)
+            {
+                var fileName = register.c_email + Path.GetExtension(
                     register.ImageFile.FileName
                 );
                 var filePath = Path.Combine("../Client/wwwroot/Images", fileName);
@@ -85,7 +119,7 @@ namespace Server.Controllers
                 using (var fileStream = new FileStream(filePath, FileMode.Create))
                 {
                     await register.ImageFile.CopyToAsync(fileStream);
-                }   
+                }
             }
             Console.WriteLine(register.c_image);
             try
@@ -107,14 +141,15 @@ namespace Server.Controllers
         }
 
         [HttpPost("Login")]
-        public async Task<IActionResult> Login([FromForm] Repositories.Models.t_Login login)
+        public async Task<IActionResult> Login([FromForm] t_Login login)
         {
             try
             {
                 var user = await _registerLoginInterface.Login(login);
                 if (user != null)
                 {
-                    return Ok(user);
+                    string token = GenerateJwtToken(user);
+                    return Ok(new { user, token }); // Return both user and token
                 }
                 else
                 {
@@ -126,5 +161,6 @@ namespace Server.Controllers
                 return StatusCode(500, new { message = "An error occurred while logging in.", error = ex.Message });
             }
         }
+
     }
 }
