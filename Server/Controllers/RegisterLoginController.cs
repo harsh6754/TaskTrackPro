@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -49,7 +50,6 @@ namespace Server.Controllers
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-
 
         [HttpGet("GetCountries")]
         public async Task<IActionResult> GetCountries()
@@ -162,6 +162,5 @@ namespace Server.Controllers
                 return StatusCode(500, new { message = "An error occurred while logging in.", error = ex.Message });
             }
         }
-
     }
 }

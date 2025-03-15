@@ -7,6 +7,7 @@ namespace Repositories.Models
 {
     public class t_Register
     {
+
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]       
         public int c_userId { get; set; }

@@ -15,5 +15,7 @@ namespace Repositories.Interfaces
         Task<List<t_State>> GetStates(int countryId);
         Task<List<t_District>> GetDistricts(int stateId);
         Task<List<t_City>> GetCities(int districtId);
+        
     }
+
 }
