@@ -1,4 +1,22 @@
+using Npgsql;
+using Repositories.Implementations;
+using Repositories.Interfaces;
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddControllers();
+builder.Services.AddSingleton<IRegisterLoginInterface, RegisterLoginRepository>();
+builder.Services.AddSingleton<NpgsqlConnection>((RegisterLoginRepository) =>{
+    var connectionString = RegisterLoginRepository.GetRequiredService<IConfiguration>().GetConnectionString("pgconn");
+    return new NpgsqlConnection(connectionString);
+});
+
+builder.Services.AddCors(p =>
+p.AddPolicy("corsapp", builder =>
+{
+    builder.WithOrigins("*").AllowAnyMethod().AllowAnyHeader();
+})
+);
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -35,6 +53,9 @@ app.MapGet("/weatherforecast", () =>
 })
 .WithName("GetWeatherForecast")
 .WithOpenApi();
+
+app.UseCors("corsapp");
+app.MapControllers();
 
 app.Run();
 

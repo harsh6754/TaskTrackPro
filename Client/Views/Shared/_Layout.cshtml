@@ -18,6 +18,8 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/Client.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
 </head>
 
 <body>
@@ -32,6 +34,7 @@
 
     <header>
         <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            
             <div class="container-fluid">
                 <!-- Logo aligned to the left -->
                 <a class="navbar-brand me-auto" asp-area="" asp-controller="Home" asp-action="Index">
@@ -104,14 +107,14 @@
 
     </div>
 
-    <footer class="border-top footer text-muted bg-light py-3">
-        <div class="container text-center">
-            &copy; 2025 - Task Management System |
-            <a asp-area="" asp-controller="Home" asp-action="Privacy" class="text-decoration-none">Privacy Policy</a> |
-            <a asp-area="" asp-controller="Home" asp-action="Terms" class="text-decoration-none">Terms of Service</a> |
-            <a asp-area="" asp-controller="Home" asp-action="Contact" class="text-decoration-none">Contact Us</a>
-        </div>
-    </footer>
+<!-- Jumping icon inside footer -->
+<footer class="border-top footer text-muted bg-light py-3">
+    <div class="container text-center">
+        &copy; 2025 - Task Management System 
+        <i class="fas fa-cogs jumping-icon mx-2"></i>
+        <a asp-area="" asp-controller="Home" asp-action="Privacy" class="text-decoration-none">Privacy Policy</a>
+    </div>
+</footer>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
