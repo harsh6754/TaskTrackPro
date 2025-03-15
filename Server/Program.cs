@@ -9,12 +9,16 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Microsoft.Net.Http.Headers;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Server.Services;
 
 
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddSingleton<JwtTokenService>();
 builder.Services.AddSingleton<IRegisterLoginInterface, RegisterLoginRepository>();
 builder.Services.AddSingleton<NpgsqlConnection>((RegisterLoginRepository) =>{
     var connectionString = RegisterLoginRepository.GetRequiredService<IConfiguration>().GetConnectionString("pgconn");
@@ -69,12 +73,13 @@ builder.Services.AddAuthentication(option =>
     {
         ValidateIssuer = false, // Set to true if you want to validate the issuer
         ValidateAudience = false, // Set to true if you want to validate the audience
-        ValidateLifetime = false, // Token expiration validation
-        ValidateIssuerSigningKey = false, // Ensure signing key is validated
+        ValidateLifetime = true, // Token expiration validation
+        // ValidateIssuerSigningKey = false, // Ensure signing key is validated
         ValidAudience = builder.Configuration["Jwt:Audience"],
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-            builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is missing."))) // Ensure key is not null
+            builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is missing."))),// Ensure key is not null
+        ClockSkew = TimeSpan.Zero  // Prevents additional expiration delay
     };
 });
 
