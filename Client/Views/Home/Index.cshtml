@@ -1,6 +1,16 @@
-﻿@{
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer localizer;
+@{
     ViewData["Title"] = "Task Track Pro";
 }
 
+
 <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 
+<div>
+    <p>
+        <h1>
+            @localizer["Hello"]
+        </h1>
+         
+    </p>
+</div>

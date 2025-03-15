@@ -1,4 +1,11 @@
-﻿<!DOCTYPE html>
+﻿@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer localizer;
+@inject Microsoft.Extensions.Options.IOptions<Microsoft.AspNetCore.Builder.RequestLocalizationOptions> locOptions;
+@{
+    var culture = Context.Features.Get<Microsoft.AspNetCore.Localization.IRequestCultureFeature>();
+    var cultureList = locOptions.Value.SupportedUICultures.Select(c => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem { Text = c.DisplayName, Value = c.Name }).Cast<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>().ToList();
+}
+
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -33,7 +40,7 @@
                 <div class="navbar-collapse collapse justify-content-center">
                     <ul class="navbar-nav">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">@localizer["Home"]</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="About">About</a>
@@ -42,6 +49,12 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Contact">Contact</a>
                         </li>
                     </ul>
+                </div>
+
+                <div>
+                    <form asp-action="CultureManagement" asp-controller="Home" method="post">
+                        <select name="culture" asp-for="@culture.RequestCulture.UICulture.Name" asp-items="cultureList" onchange="this.form.submit()"></select>
+                    </form>
                 </div>
 
                 <!-- Account Dropdown aligned to the right -->
