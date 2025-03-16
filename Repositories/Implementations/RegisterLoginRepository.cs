@@ -231,5 +231,75 @@ namespace Repositories.Implementations
 
             return UserData;
         }
+
+        public async Task<int> ChangePassword(t_ChangePassword changePassword)
+        {
+            try
+            {
+                await _conn.OpenAsync();
+                string qry = @"
+                    UPDATE t_task_track_pro_register_login
+                    SET c_password = @c_newPassword
+                    WHERE c_userId = @c_userId AND c_password = @c_oldPassword;
+                ";
+
+                using (NpgsqlCommand cmd = new NpgsqlCommand(qry, _conn))
+                {
+                    cmd.Parameters.AddWithValue("@c_userId", changePassword.c_userId);
+                    cmd.Parameters.AddWithValue("@c_oldPassword", changePassword.c_oldPassword);
+                    cmd.Parameters.AddWithValue("@c_newPassword", changePassword.c_newPassword);
+
+                    int rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    return rowsAffected;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("An error occurred while changing the password: " + ex.Message);
+            }
+            finally
+            {
+                await _conn.CloseAsync();
+            }
+        }
+
+        public async Task<t_UserUpdateProfile> UpdateProfile(t_UserUpdateProfile userUpdateProfile)
+        {
+            try
+            {
+                await _conn.CloseAsync();
+                await _conn.OpenAsync();
+
+                // Retrieve old image path before updating
+                string selectQuery = "SELECT c_image FROM t_task_track_pro_register_login WHERE c_userId = @c_userId;";
+                string oldImagePath = null;
+
+                using (NpgsqlCommand selectCmd = new NpgsqlCommand(selectQuery, _conn))
+                {
+                    selectCmd.Parameters.AddWithValue("@c_userId", userUpdateProfile.c_userId);
+                    var result = await selectCmd.ExecuteScalarAsync();
+                    oldImagePath = result != null ? result.ToString() : null;
+                }
+
+                // Update profile with new image
+                string updateQuery = "UPDATE t_task_track_pro_register_login SET c_image = @c_newImage WHERE c_userId = @c_userId;";
+                using (NpgsqlCommand updateCmd = new NpgsqlCommand(updateQuery, _conn))
+                {
+                    updateCmd.Parameters.AddWithValue("@c_newImage", userUpdateProfile.newImage);
+                    updateCmd.Parameters.AddWithValue("@c_userId", userUpdateProfile.c_userId);
+
+                    int rowsAffected = await updateCmd.ExecuteNonQueryAsync();
+                }
+
+                await _conn.CloseAsync();
+            }
+            catch (Exception ex)
+            {
+                await _conn.CloseAsync();
+                throw new Exception("An error occurred while updating the profile: " + ex.Message);
+            }
+
+            return userUpdateProfile;
+        }
     }
 }

@@ -108,7 +108,7 @@ namespace Server.Controllers
         }
 
         [HttpPost("Register")]
-        public async Task<IActionResult> Register([FromForm] Repositories.Models.t_Register register)
+        public async Task<IActionResult> Register([FromForm] t_Register register)
         {
             if (register.ImageFile != null && register.ImageFile.Length > 0)
             {

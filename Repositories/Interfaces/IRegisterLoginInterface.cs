@@ -15,7 +15,10 @@ namespace Repositories.Interfaces
         Task<List<t_State>> GetStates(int countryId);
         Task<List<t_District>> GetDistricts(int stateId);
         Task<List<t_City>> GetCities(int districtId);
-        
+
+        Task<int> ChangePassword(t_ChangePassword changePassword);
+
+        Task<t_UserUpdateProfile> UpdateProfile(t_UserUpdateProfile userUpdateProfile);
     }
 
 }
